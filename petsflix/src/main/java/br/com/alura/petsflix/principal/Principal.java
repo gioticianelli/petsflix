@@ -2,16 +2,14 @@ package br.com.alura.petsflix.principal;
 
 import br.com.alura.petsflix.model.DadosSerie;
 import br.com.alura.petsflix.model.DadosTemporada;
+import br.com.alura.petsflix.model.Episodio;
 import br.com.alura.petsflix.model.Serie;
 import br.com.alura.petsflix.repository.SerieRepository;
 import br.com.alura.petsflix.service.ConsumoApi;
 import br.com.alura.petsflix.service.ConverteDados;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Principal {
@@ -25,6 +23,8 @@ public class Principal {
 
    private SerieRepository repositorio;
 
+  private List<Serie> series =new ArrayList<>();
+
     public Principal(SerieRepository repositorio) {
         this.repositorio = repositorio;
     }
@@ -36,10 +36,7 @@ public class Principal {
             var menu = """
                     1 - Buscar séries
                     2 - Buscar episódios
-                    3 - Listar séries buscadas
-                    4 - Buscar serie pelo ator
-                    5 - Listar Atores Buscados
-                                    
+                    3 - Listar séries buscadas               
                     0 - Sair                                 
                     """;
 
@@ -56,11 +53,6 @@ public class Principal {
                     break;
                 case 3:
                     listarSeriesBuscadas();
-                case 4:
-                    buscarSeriesPorAtor();
-                    break;
-                case 5:
-                    listarAtoresBuscados();
                     break;
                 case 0:
                     System.out.println("Saindo...");
@@ -88,51 +80,44 @@ public class Principal {
     }
 
     private void buscarEpisodioPorSerie(){
-        DadosSerie dadosSerie = getDadosSerie();
-        List<DadosTemporada> temporadas = new ArrayList<>();
+        listarSeriesBuscadas();
+        System.out.println("Escolha uma série pelo nome: ");
+        var nomeSerie = leitura.nextLine();
 
-        for (int i = 1; i <= dadosSerie.totalTemporadas(); i++) {
-            var json = consumo.obterDados(ENDERECO + dadosSerie.titulo().replace(" ", "+") + "&season=" + i + API_KEY);
-            DadosTemporada dadosTemporada = conversor.obterDados(json, DadosTemporada.class);
-            temporadas.add(dadosTemporada);
-        }
-        temporadas.forEach(System.out::println);
-    }
+        Optional<Serie> serie = series.stream()
+                .filter(s -> s.getTitulo().toLowerCase().contains(nomeSerie.toLowerCase()))
+                .findFirst();
 
-    private void buscarSeriesPorAtor(){
-        System.out.println("Digite o nome do ator para buscar suas séries:");
-        var nomeAtor =leitura.nextLine();
+        if (serie.isPresent()) {
 
-        List<Serie> seriesDoAtor = this.dadosSeries.stream()
-                .filter(d -> d.atores() != null && d.atores().toLowerCase().contains(nomeAtor.toLowerCase()))
-                .map(Serie::new)
-                .collect(Collectors.toList());
+            var serieEncontrada = serie.get();
+            List<DadosTemporada> temporadas = new ArrayList<>();
 
+            for (int i = 1; i <= serieEncontrada.getTotalTemporadas(); i++) {
+                var json = consumo.obterDados(ENDERECO + serieEncontrada.getTitulo().replace(" ", "+") + "&season=" + i + API_KEY);
+                DadosTemporada dadosTemporada = conversor.obterDados(json, DadosTemporada.class);
+                temporadas.add(dadosTemporada);
+            }
+            temporadas.forEach(System.out::println);
 
+            List<Episodio> episodios = temporadas.stream()
+                    .flatMap(d -> d.episodios().stream()
+                            .map(e -> new Episodio(d.numero(), e)))
+                    .collect(Collectors.toList());
+            serieEncontrada.setEpisodios((episodios));
+            repositorio.save(serieEncontrada);
 
-        if (seriesDoAtor.isEmpty()){
-            System.out.println("Nenhum serie encontrado para o ator: " + nomeAtor);
         } else {
-            System.out.println("\nSéries encontradas para o ator: " + nomeAtor + ":");
-            seriesDoAtor.forEach(s -> {
-                System.out.println("Titulo: " + s.getTitulo() +
-                        " | Atores: " + s.getAtores());
-            });
+            System.out.println("Série não encontrada :(");
         }
-    }
 
 
-    private void listarAtoresBuscados(){
-        List<Serie> seriesDoAtor = repositorio.findAll();
-        seriesDoAtor.stream()
-                .filter(a -> a.getAtores() != null && !a.getAtores().isEmpty())
-                .forEach(System.out::println);
+
     }
 
 
 
     private void listarSeriesBuscadas(){
-        List<Serie> series = new ArrayList<>();
         series = repositorio.findAll();
         series.stream()
                 .sorted(Comparator.comparing(Serie::getGenero))
