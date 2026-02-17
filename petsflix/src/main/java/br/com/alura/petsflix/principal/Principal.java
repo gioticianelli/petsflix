@@ -43,7 +43,8 @@ public class Principal {
                     8 - Filtrar séries
                     9 - Buscar episódios por trecho
                     10 - Top 5 episódios por série
-                    11 - Buscar episódios a partir de uma data 
+                    11 - Buscar episódios a partir de uma data
+                    12 - Delete uma série
                                     
                     0 - Sair                                 
                     """;
@@ -86,6 +87,10 @@ public class Principal {
                 case 11:
                     buscarEpisodiosDepoisDeUmaData();
                     break;
+                case 12:
+                    excluirSerieId();
+                    break;
+
                 case 0:
                     System.out.println("Saindo...");
                     break;
@@ -234,5 +239,41 @@ public class Principal {
             List<Episodio> episodiosAno = repositorio.episodiosPorSerieEAno(serie, anoLancamento);
             episodiosAno.forEach(System.out::println);
         }
+    }
+
+    private void excluirSerieId() {
+        System.out.println("********ESCLUSÃO DE SERIES********");
+        List<Serie> seriesLista = repositorio.findAll();
+        if (seriesLista.isEmpty()) {
+            System.out.println("Nenhuma serie cadastrada no momento");
+        }
+
+        System.out.println("Series em seu banco de dados: ");
+        for (Serie series :seriesLista ) {
+            System.out.println("ID: " + series.getId() + " | Nome: " + series.getTitulo());
+        }
+
+        System.out.println("Digite APENAS 1 ID por vez para exxclusão! ");
+        Long id = leitura.nextLong();
+        leitura.nextLine();
+
+        Optional<Serie> series = repositorio.findById(id);
+
+        if (series.isPresent()) {
+            System.out.println("Serie: " + series.get().getTitulo());
+            System.out.println("\n Você tem certeza da exclusão? (S/N)?");
+            String confirmacaoExclusao = leitura.nextLine();
+
+            if (confirmacaoExclusao.equalsIgnoreCase("S")) {
+                repositorio.deleteById(id);
+                System.out.println("Serie excluida com sucesso!!!");
+            } else {
+                System.out.println("Serie salva! Nenhum item foi deletado.");
+            }
+
+        } else {
+            System.out.println("Nenhuma serie encontrada.");
+        }
+
     }
 }

@@ -8,10 +8,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class PetsflixApplication implements CommandLineRunner {
+public class PetsflixApplication {
 
-    @Autowired
-    private SerieRepository repositorio;
 
 	public static void main(String[] args) {
 
@@ -19,12 +17,5 @@ public class PetsflixApplication implements CommandLineRunner {
         SpringApplication.run(PetsflixApplication.class, args);
 	}
 
-    @Override
-    public void run(String... args) throws Exception {
-        Principal principal = new Principal(repositorio);
-        principal.exibeMenu();
 
-
-
-    }
 }
